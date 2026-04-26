@@ -1,4 +1,4 @@
-# My Bookshelf
+# My Bookshelf (~<5 sec site load time)
 
 Most of the books I've admittedly yet to read but acquired cheaply.
 I think I should have read a few of these books back in first year.
