@@ -1,0 +1,36 @@
+# AHK
+
+#Requires AutoHotkey v2.0 https://www.autohotkey.com/download/#:~:text=Download%20EXE
+# Play/pause any tab media + Windows Taskbar toggle + keyboard shortcut 
+# ^![letter] is Ctrl + Alt + [letter]
+
+^!p:: {
+    Send "{Media_Play_Pause}"
+}
+
+^!h:: {
+    static hidden := false
+    ABM_SETSTATE := 0xA
+    ABS_AUTOHIDE := 0x1
+    ABS_NORMAL := 0x0
+
+    APPBARDATA := Buffer(48, 0)
+    NumPut("UInt", 48, APPBARDATA, 0)
+    NumPut("Ptr", WinExist("ahk_class Shell_TrayWnd"), APPBARDATA, 8)
+
+    if hidden {
+        NumPut("UInt", ABS_NORMAL, APPBARDATA, 40)
+        DllCall("Shell32\SHAppBarMessage", "UInt", ABM_SETSTATE, "Ptr", APPBARDATA)
+        hidden := false
+    } else {
+        NumPut("UInt", ABS_AUTOHIDE, APPBARDATA, 40)
+        DllCall("Shell32\SHAppBarMessage", "UInt", ABM_SETSTATE, "Ptr", APPBARDATA)
+        hidden := true
+    }
+}
+
+::~=::≈
+::uuw::u39patel@uwaterloo.ca
+::u77::umar77patel@gmail.com
+
+![My Bookshelf](https://raw.githubusercontent.com/UmarPatel77/umarhq/main/IMG_7261.JPEG)
