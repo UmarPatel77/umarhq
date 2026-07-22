@@ -1,5 +1,7 @@
 # AHK
 
+# Ctrl-A on this site and save as txt file
+
 #Requires AutoHotkey v2.0 https://www.autohotkey.com/download/#:~:text=Download%20EXE
 # Play/pause any tab media + Windows Taskbar toggle + keyboard shortcut 
 # ^![letter] is Ctrl + Alt + [letter]
@@ -32,5 +34,3 @@
 ::~=::≈
 ::uuw::u39patel@uwaterloo.ca
 ::u77::umar77patel@gmail.com
-
-![My Bookshelf](https://raw.githubusercontent.com/UmarPatel77/umarhq/main/IMG_7261.JPEG)
