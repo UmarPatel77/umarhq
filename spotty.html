@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spotify Timestamp Player</title>
+  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+</head>
+<body>
+  <div id="embed-iframe"></div>
+
+  <script>
+    // Example usage: ?track=TRACK_ID&t=83
+    const params = new URLSearchParams(window.location.search);
+    const trackId = params.get('track');          // e.g. 6rqhFgbbKwnb9MLmUQDhG6
+    const startSeconds = parseInt(params.get('t') || '0', 10);
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+      const element = document.getElementById('embed-iframe');
+      const options = {
+        uri: `spotify:track:${trackId}`,
+        width: '100%',
+        height: 152
+      };
+
+      IFrameAPI.createController(element, options, (EmbedController) => {
+        // Load and jump to the timestamp
+        EmbedController.loadEntity(`spotify:track:${trackId}`, false, startSeconds);
+        
+        // Optional: auto-play (may be blocked by browser autoplay policies)
+        setTimeout(() => EmbedController.play(), 500);
+      });
+    };
+  </script>
+</body>
+</html>
