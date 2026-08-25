@@ -1,0 +1,28 @@
+# Spotify secrets & tokens
+.spotty_cache
+.spotty_cache-*
+spotify_cookies.json
+*.cache
+.env
+.env.*
+.env.local
+config.py
+secrets.py
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
