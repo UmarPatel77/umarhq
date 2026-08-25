@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spotiky</title>
+  <title>Spotty / Spotiky Test</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -12,13 +12,36 @@
       padding: 20px;
       background: #121212;
       color: #fff;
-      text-align: center;
     }
-    h1 { margin-bottom: 8px; }
-    p { color: #b3b3b3; }
+    h1 { font-size: 1.5rem; margin-bottom: 6px; }
+    p { color: #b3b3b3; margin-top: 0; }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #282828;
+      color: white;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: #1DB954;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #1ed760; }
     #status {
-      margin: 20px 0;
-      color: #1DB954;
+      margin-top: 16px;
+      color: #b3b3b3;
       min-height: 24px;
     }
     #embed {
@@ -30,64 +53,96 @@
   <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
 <body>
-  <h1>Spotiky</h1>
-  <p>Playing Spotify track at timestamp</p>
-  <div id="status">Loading...</div>
+  <h1>Spotty</h1>
+  <p>Test player for Spotiky-style links</p>
+
+  <input id="link" placeholder="Spotify track link or ID">
+  <input id="time" placeholder="Time (1:23 or 83)">
+  <button onclick="play()">Play from timestamp</button>
+
+  <div id="status"></div>
   <div id="embed"></div>
 
   <script>
     let controller = null;
 
-    // Parse URL: /track/TRACKID.SECONDS
-    function parseSpotikyUrl() {
-      const path = window.location.pathname; // e.g. /track/5YL9rgtFHTJpX1v4GKFK2h.83
-      const match = path.match(/\/track\/([a-zA-Z0-9]{22})\.(\d+)/);
-      
-      if (match) {
-        return {
-          trackId: match[1],
-          seconds: parseInt(match[2], 10)
-        };
-      }
-      return null;
-    }
-
     window.onSpotifyIframeApiReady = (IFrameAPI) => {
       const element = document.getElementById('embed');
-      
       IFrameAPI.createController(element, {
         width: '100%',
         height: 152,
         theme: 'dark'
       }, (c) => {
         controller = c;
-        startPlayback();
+        // Auto-play if the URL already contains a track
+        autoLoadFromUrl();
       });
     };
 
-    function startPlayback() {
-      const data = parseSpotikyUrl();
+    function parseTime(t) {
+      if (!t) return 0;
+      if (t.includes(':')) {
+        const parts = t.split(':').map(Number);
+        return parts[0] * 60 + (parts[1] || 0);
+      }
+      return parseInt(t) || 0;
+    }
+
+    function extractTrackId(input) {
+      const match = input.match(/(?:track[/:]|spotify:track:)([a-zA-Z0-9]{22})/);
+      return match ? match[1] : (input.length === 22 ? input : null);
+    }
+
+    function play(trackId = null, seconds = null) {
       const status = document.getElementById('status');
 
-      if (!data) {
-        status.textContent = 'Invalid Spotiky link';
+      if (!trackId) {
+        trackId = extractTrackId(document.getElementById('link').value.trim());
+        seconds = parseTime(document.getElementById('time').value.trim());
+      }
+
+      if (!trackId) {
+        status.textContent = 'Invalid track';
         return;
       }
 
       if (!controller) {
-        status.textContent = 'Player loading...';
+        status.textContent = 'Player still loading...';
         return;
       }
 
-      status.textContent = `Starting at ${data.seconds}s...`;
+      status.textContent = `Loading… starting at ${seconds}s`;
 
-      // This is the same method that worked in your original spotty.html
-      controller.loadEntity(`spotify:track:${data.trackId}`, false, data.seconds);
+      // Same method that worked before
+      controller.loadEntity(`spotify:track:${trackId}`, false, seconds);
 
       setTimeout(() => {
         controller.play();
-        status.textContent = `Playing from ${data.seconds}s (best if logged into Spotify)`;
+        status.textContent = `Playing from ${seconds}s (best if logged into Spotify)`;
       }, 900);
+    }
+
+    // Support both formats while testing on umarhq.com
+    function autoLoadFromUrl() {
+      // 1. Hash style: #track/ID.83  (Spotiky-style)
+      const hash = window.location.hash.slice(1); // remove #
+      const hashMatch = hash.match(/^track\/([a-zA-Z0-9]{22})\.(\d+)$/);
+      if (hashMatch) {
+        document.getElementById('link').value = hashMatch[1];
+        document.getElementById('time').value = hashMatch[2];
+        play(hashMatch[1], parseInt(hashMatch[2]));
+        return;
+      }
+
+      // 2. Classic query style: ?track=ID&t=83
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('track')) {
+        const id = extractTrackId(params.get('track'));
+        const t = parseTime(params.get('t') || '0');
+        document.getElementById('link').value = params.get('track');
+        document.getElementById('time').value = params.get('t') || '0';
+        play(id, t);
+      }
     }
   </script>
 </body>
