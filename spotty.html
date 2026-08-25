@@ -53,4 +53,114 @@
   <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
 <body>
- 
+  <h1>Spotty</h1>
+  <p>Works best when logged into Spotify in this browser</p>
+
+  <input id="link" placeholder="Spotify track link or ID">
+  <input id="time" placeholder="Time (1:23 or 83)">
+  <button onclick="play()">Play from timestamp</button>
+
+  <div id="status">Waiting for player...</div>
+  <div id="embed"></div>
+
+  <script>
+    let controller = null;
+    let pendingTrack = null;
+    let pendingSeconds = 0;
+
+    function parseTime(t) {
+      if (!t) return 0;
+      if (String(t).includes(':')) {
+        const parts = String(t).split(':').map(Number);
+        return parts[0] * 60 + (parts[1] || 0);
+      }
+      return parseInt(t) || 0;
+    }
+
+    function extractTrackId(input) {
+      if (!input) return null;
+      const match = String(input).match(/(?:track[/:]|spotify:track:)([a-zA-Z0-9]{22})/);
+      if (match) return match[1];
+      if (/^[a-zA-Z0-9]{22}$/.test(input)) return input;
+      return null;
+    }
+
+    function play(trackId = null, seconds = null) {
+      const status = document.getElementById('status');
+
+      if (!trackId) {
+        trackId = extractTrackId(document.getElementById('link').value.trim());
+        seconds = parseTime(document.getElementById('time').value.trim());
+      }
+
+      if (!trackId) {
+        status.textContent = 'Invalid track';
+        return;
+      }
+
+      // If controller isn’t ready yet, save it for later
+      if (!controller) {
+        pendingTrack = trackId;
+        pendingSeconds = seconds;
+        status.textContent = 'Player loading… will start soon';
+        return;
+      }
+
+      status.textContent = `Starting at ${seconds}s…`;
+
+      controller.loadEntity(`spotify:track:${trackId}`, false, seconds);
+
+      setTimeout(() => {
+        controller.play();
+        status.textContent = `Playing from ${seconds}s`;
+      }, 1000);
+    }
+
+    // Read URL as soon as possible
+    function readUrl() {
+      // Hash style: #track/ID.83
+      const hash = window.location.hash.slice(1);
+      const hashMatch = hash.match(/^track\/([a-zA-Z0-9]{22})\.(\d+)$/);
+      if (hashMatch) {
+        const id = hashMatch[1];
+        const sec = parseInt(hashMatch[2], 10);
+        document.getElementById('link').value = id;
+        document.getElementById('time').value = sec;
+        play(id, sec);
+        return;
+      }
+
+      // Query style: ?track=ID&t=83
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('track')) {
+        const id = extractTrackId(params.get('track'));
+        const sec = parseTime(params.get('t') || '0');
+        document.getElementById('link').value = params.get('track');
+        document.getElementById('time').value = params.get('t') || '0';
+        play(id, sec);
+      }
+    }
+
+    window.onSpotifyIframeApiReady = (IFrameAPI) => {
+      const element = document.getElementById('embed');
+      IFrameAPI.createController(element, {
+        width: '100%',
+        height: 152,
+        theme: 'dark'
+      }, (c) => {
+        controller = c;
+        document.getElementById('status').textContent = 'Player ready';
+
+        // If something was waiting, play it now
+        if (pendingTrack) {
+          play(pendingTrack, pendingSeconds);
+          pendingTrack = null;
+        }
+      });
+    };
+
+    // Try reading the URL immediately
+    readUrl();
+  </script>
+</body>
+</html>
