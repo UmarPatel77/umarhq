@@ -3,72 +3,91 @@
 <head>
   <title>Spotify Timestamp Player</title>
   <style>
-    body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 20px; }
-    input, button { padding: 10px; font-size: 16px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-    button { background: #1DB954; color: white; border: none; cursor: pointer; }
-    #status { margin-top: 15px; color: #666; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 520px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #121212;
+      color: #fff;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      box-sizing: border-box;
+    }
+    input {
+      background: #282828;
+      color: white;
+    }
+    button {
+      background: #1DB954;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1ed760;
+    }
+    #status {
+      margin-top: 18px;
+      color: #b3b3b3;
+      min-height: 24px;
+    }
   </style>
-  <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
 <body>
   <h2>Spotify Timestamp Player</h2>
-  <p>Paste a Spotify track link + time (works best if you're logged into Spotify in this browser)</p>
+  <p style="color:#b3b3b3; font-size:14px;">Paste a Spotify track link + time</p>
 
-  <input id="link" placeholder="https://open.spotify.com/track/.... or just the ID" value="">
-  <input id="time" placeholder="Time (e.g. 1:23 or 83)" value="">
-  <button onclick="loadTrack()">Play from timestamp</button>
+  <input id="link" placeholder="https://open.spotify.com/track/..." />
+  <input id="time" placeholder="Time (e.g. 1:23 or 83)" />
+  <button onclick="playTrack()">Play from timestamp</button>
 
   <div id="status"></div>
-  <div id="embed-iframe" style="margin-top:20px;"></div>
 
   <script>
-    let controller = null;
+    // Change this to your backend URL when you deploy it
+    const BACKEND = "http://127.0.0.1:5000";   // local testing
+    // const BACKEND = "https://your-backend.up.railway.app";  // later
 
-    window.onSpotifyIframeApiReady = (IFrameAPI) => {
-      const element = document.getElementById('embed-iframe');
-      IFrameAPI.createController(element, { width: '100%', height: 152 }, (c) => {
-        controller = c;
-      });
-    };
+    async function playTrack() {
+      const link = document.getElementById("link").value.trim();
+      const time = document.getElementById("time").value.trim() || "0";
+      const status = document.getElementById("status");
 
-    function loadTrack() {
-      const link = document.getElementById('link').value.trim();
-      const timeStr = document.getElementById('time').value.trim();
-      const status = document.getElementById('status');
-
-      // Extract track ID
-      let trackId = link;
-      const match = link.match(/track\/([a-zA-Z0-9]+)/);
-      if (match) trackId = match[1];
-
-      if (!trackId || trackId.length < 10) {
-        status.textContent = "Please paste a valid Spotify track link or ID";
+      if (!link) {
+        status.textContent = "Please paste a Spotify track link";
         return;
       }
 
-      // Parse time (supports 1:23 or 83)
-      let seconds = 0;
-      if (timeStr.includes(':')) {
-        const parts = timeStr.split(':').map(Number);
-        seconds = parts[0] * 60 + (parts[1] || 0);
-      } else {
-        seconds = parseInt(timeStr) || 0;
-      }
+      status.textContent = "Sending request...";
 
-      status.textContent = `Loading track… starting at ${seconds}s (make sure you're logged into Spotify)`;
+      try {
+        const res = await fetch(
+          `${BACKEND}/play?track=${encodeURIComponent(link)}&t=${encodeURIComponent(time)}`
+        );
+        const data = await res.json();
 
-      if (controller) {
-        controller.loadEntity(`spotify:track:${trackId}`, false, seconds);
-        setTimeout(() => controller.play(), 800);
+        if (data.ok) {
+          status.textContent = `Playing from ${data.start_seconds}s`;
+        } else {
+          status.textContent = `Error: ${data.error}`;
+        }
+      } catch (err) {
+        status.textContent = "Could not reach the player backend";
       }
     }
 
-    // Auto-load if URL has params
+    // Optional: auto-fill from URL parameters (?track=...&t=...)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('track')) {
-      document.getElementById('link').value = params.get('track');
-      document.getElementById('time').value = params.get('t') || '0';
-      setTimeout(loadTrack, 1000);
+    if (params.get("track")) {
+      document.getElementById("link").value = params.get("track");
+      document.getElementById("time").value = params.get("t") || "0";
     }
   </script>
 </body>
