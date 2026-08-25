@@ -158,9 +158,46 @@
         }
       });
     };
-
-    // Try reading the URL immediately
-    readUrl();
+    
+    // ... keep all the previous functions (parseTime, extractTrackId, play, etc.)
+    
+    function readUrlAndPlay() {
+      // Hash style: #track/ID.83
+      const hash = window.location.hash.slice(1);
+      const hashMatch = hash.match(/^track\/([a-zA-Z0-9]{22})\.(\d+)$/);
+      
+      if (hashMatch) {
+        const id = hashMatch[1];
+        const sec = parseInt(hashMatch[2], 10);
+        document.getElementById('link').value = id;
+        document.getElementById('time').value = sec;
+        play(id, sec);
+        return;
+      }
+    
+      // Query style: ?track=ID&t=83
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('track')) {
+        const id = extractTrackId(params.get('track'));
+        const sec = parseTime(params.get('t') || '0');
+        document.getElementById('link').value = params.get('track');
+        document.getElementById('time').value = params.get('t') || '0';
+        play(id, sec);
+      }
+    }
+    
+    // Run on first load
+    readUrlAndPlay();
+    
+    // Run again whenever the hash changes (this is the key part)
+    window.addEventListener('hashchange', () => {
+      readUrlAndPlay();
+    });
+    
+    // Optional: also support browser back/forward with query params
+    window.addEventListener('popstate', () => {
+      readUrlAndPlay();
+    });
   </script>
 </body>
 </html>
