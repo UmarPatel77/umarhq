@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spotty</title>
+  <title>Spotty – Play Spotify at Timestamp</title>
+
+  <!-- Open Graph / Discord embed -->
+  <meta property="og:title" content="Spotty – Play Spotify at Timestamp">
+  <meta property="og:description" content="Click to play this Spotify track starting at the chosen time.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://umarhq.com/spotty.html">
+  <meta property="og:image" content="https://umarhq.com/spotty-og.png"> <!-- optional: add an image later -->
+  <meta name="theme-color" content="#1DB954">
+
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -13,8 +22,14 @@
       background: #121212;
       color: #fff;
     }
-    h1 { font-size: 1.5rem; margin-bottom: 6px; }
-    p { color: #b3b3b3; margin-top: 0; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 6px;
+    }
+    p {
+      color: #b3b3b3;
+      margin-top: 0;
+    }
     input {
       width: 100%;
       padding: 12px;
@@ -38,7 +53,9 @@
       color: white;
       cursor: pointer;
     }
-    button:hover { background: #1ed760; }
+    button:hover {
+      background: #1ed760;
+    }
     #status {
       margin-top: 16px;
       color: #b3b3b3;
@@ -50,6 +67,7 @@
       overflow: hidden;
     }
   </style>
+
   <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
 </head>
 <body>
@@ -98,7 +116,7 @@
         return;
       }
 
-      // If controller isn’t ready yet, save it for later
+      // Save for later if controller isn't ready
       if (!controller) {
         pendingTrack = trackId;
         pendingSeconds = seconds;
@@ -116,9 +134,8 @@
       }, 1000);
     }
 
-    // Read URL as soon as possible
-    function readUrl() {
-      // Hash style: #track/ID.83
+    function readUrlAndPlay() {
+      // 1. Hash style (old format): #track/ID.83
       const hash = window.location.hash.slice(1);
       const hashMatch = hash.match(/^track\/([a-zA-Z0-9]{22})\.(\d+)$/);
       if (hashMatch) {
@@ -130,7 +147,7 @@
         return;
       }
 
-      // Query style: ?track=ID&t=83
+      // 2. Query style (recommended for Discord): ?track=ID&t=83
       const params = new URLSearchParams(window.location.search);
       if (params.get('track')) {
         const id = extractTrackId(params.get('track'));
@@ -151,53 +168,22 @@
         controller = c;
         document.getElementById('status').textContent = 'Player ready';
 
-        // If something was waiting, play it now
+        // Play anything that was waiting
         if (pendingTrack) {
           play(pendingTrack, pendingSeconds);
           pendingTrack = null;
         }
       });
     };
-    
-    // ... keep all the previous functions (parseTime, extractTrackId, play, etc.)
-    
-    function readUrlAndPlay() {
-      // Hash style: #track/ID.83
-      const hash = window.location.hash.slice(1);
-      const hashMatch = hash.match(/^track\/([a-zA-Z0-9]{22})\.(\d+)$/);
-      
-      if (hashMatch) {
-        const id = hashMatch[1];
-        const sec = parseInt(hashMatch[2], 10);
-        document.getElementById('link').value = id;
-        document.getElementById('time').value = sec;
-        play(id, sec);
-        return;
-      }
-    
-      // Query style: ?track=ID&t=83
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('track')) {
-        const id = extractTrackId(params.get('track'));
-        const sec = parseTime(params.get('t') || '0');
-        document.getElementById('link').value = params.get('track');
-        document.getElementById('time').value = params.get('t') || '0';
-        play(id, sec);
-      }
-    }
-    
+
     // Run on first load
     readUrlAndPlay();
-    
-    // Run again whenever the hash changes (this is the key part)
-    window.addEventListener('hashchange', () => {
-      readUrlAndPlay();
-    });
-    
-    // Optional: also support browser back/forward with query params
-    window.addEventListener('popstate', () => {
-      readUrlAndPlay();
-    });
+
+    // React when the hash changes
+    window.addEventListener('hashchange', readUrlAndPlay);
+
+    // React to browser back/forward
+    window.addEventListener('popstate', readUrlAndPlay);
   </script>
 </body>
 </html>
