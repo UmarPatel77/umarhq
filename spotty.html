@@ -103,37 +103,45 @@
       return null;
     }
 
-    function play(trackId = null, seconds = null) {
-      const status = document.getElementById('status');
+function play(trackId = null, seconds = null) {
+  const status = document.getElementById('status');
 
-      if (!trackId) {
-        trackId = extractTrackId(document.getElementById('link').value.trim());
-        seconds = parseTime(document.getElementById('time').value.trim());
-      }
+  if (!trackId) {
+    trackId = extractTrackId(document.getElementById('link').value.trim());
+    seconds = parseTime(document.getElementById('time').value.trim());
+  }
 
-      if (!trackId) {
-        status.textContent = 'Invalid track';
-        return;
-      }
+  if (!trackId) {
+    status.textContent = 'Invalid track';
+    return;
+  }
 
-      // Save for later if controller isn't ready
-      if (!controller) {
-        pendingTrack = trackId;
-        pendingSeconds = seconds;
-        status.textContent = 'Player loading… will start soon';
-        return;
-      }
+  if (!controller) {
+    pendingTrack = trackId;
+    pendingSeconds = seconds;
+    status.textContent = 'Player loading… will start soon';
+    return;
+  }
 
-      status.textContent = `Starting at ${seconds}s…`;
+  status.textContent = `Starting at ${seconds}s…`;
 
-      controller.loadEntity(`spotify:track:${trackId}`, false, seconds);
+  // Load the track at the correct time
+  controller.loadEntity(`spotify:track:${trackId}`, false, seconds);
 
-      setTimeout(() => {
-        controller.play();
-        status.textContent = `Playing from ${seconds}s`;
-      }, 1000);
+  // Multiple play attempts to improve chance of autoplay
+  const tryPlay = (attempt = 1) => {
+    controller.play();
+    status.textContent = `Playing from ${seconds}s`;
+
+    // Try a few more times in case the first ones are blocked
+    if (attempt < 4) {
+      setTimeout(() => tryPlay(attempt + 1), 600 * attempt);
     }
+  };
 
+  // First attempt after a short delay
+  setTimeout(() => tryPlay(1), 800);
+}
     function readUrlAndPlay() {
       // 1. Hash style (old format): #track/ID.83
       const hash = window.location.hash.slice(1);
